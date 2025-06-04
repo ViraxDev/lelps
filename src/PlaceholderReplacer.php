@@ -3,10 +3,20 @@
 final class PlaceholderReplacer
 {
     private $applicationContext;
+    private $quoteRepository;
+    private $siteRepository;
+    private $destinationRepository;
 
-    public function __construct(ApplicationContext $applicationContext = null)
-    {
+    public function __construct(
+        ApplicationContext $applicationContext = null,
+        QuoteRepository $quoteRepository = null,
+        SiteRepository $siteRepository = null,
+        DestinationRepository $destinationRepository = null
+    ) {
         $this->applicationContext = $applicationContext ?: ApplicationContext::getInstance();
+        $this->quoteRepository = $quoteRepository ?: QuoteRepository::getInstance();
+        $this->siteRepository = $siteRepository ?: SiteRepository::getInstance();
+        $this->destinationRepository = $destinationRepository ?: DestinationRepository::getInstance();
     }
 
     public function replacePlaceholders(string $text, array $data): string
@@ -37,7 +47,7 @@ final class PlaceholderReplacer
      * @param array $data
      * @return User|null
      */
-    private function getUser(array $data)
+    private function getUser(array $data): User
     {
         return (isset($data['user']) && $data['user'] instanceof User)
             ? $data['user']
@@ -51,42 +61,39 @@ final class PlaceholderReplacer
      */
     private function replaceQuotePlaceholders(string $text, Quote $quote): string
     {
-        $_quoteFromRepository = QuoteRepository::getInstance()->getById($quote->id);
-        $usefulObject = SiteRepository::getInstance()->getById($quote->siteId);
-        $destinationOfQuote = DestinationRepository::getInstance()->getById($quote->destinationId);
+        $fullQuote = $this->quoteRepository->getById($quote->id);
+        $site = $this->siteRepository->getById($quote->siteId);
+        $destination = $this->destinationRepository->getById($quote->destinationId);
 
-        if (strpos($text, '[quote:destination_link]') !== false) {
-            $destination = DestinationRepository::getInstance()->getById($quote->destinationId);
-        }
+        $needsDestinationLink = strpos($text, '[quote:destination_link]') !== false;
 
-        $containsSummaryHtml = strpos($text, '[quote:summary_html]');
-        $containsSummary = strpos($text, '[quote:summary]');
+        $containsSummaryHtml = strpos($text, '[quote:summary_html]') !== false;
+        $containsSummary = strpos($text, '[quote:summary]') !== false;
 
-        if ($containsSummaryHtml !== false || $containsSummary !== false) {
-            if ($containsSummaryHtml !== false) {
+        if ($containsSummaryHtml || $containsSummary) {
+            if ($containsSummaryHtml) {
                 $text = str_replace(
                     '[quote:summary_html]',
-                    Quote::renderHtml($_quoteFromRepository),
+                    Quote::renderHtml($fullQuote),
                     $text
                 );
             }
-            if ($containsSummary !== false) {
+            if ($containsSummary) {
                 $text = str_replace(
                     '[quote:summary]',
-                    Quote::renderText($_quoteFromRepository),
+                    Quote::renderText($fullQuote),
                     $text
                 );
             }
         }
 
         if (strpos($text, '[quote:destination_name]') !== false) {
-            $text = str_replace('[quote:destination_name]', $destinationOfQuote->countryName, $text);
+            $text = str_replace('[quote:destination_name]', $destination->countryName, $text);
         }
 
-        if (isset($destination)) {
-            $text = str_replace('[quote:destination_link]', $usefulObject->url . '/' . $destination->countryName . '/quote/' . $_quoteFromRepository->id, $text);
-        } else {
-            $text = str_replace('[quote:destination_link]', '', $text);
+        if ($needsDestinationLink) {
+            $destinationLink = $site->url . '/' . $destination->countryName . '/quote/' . $fullQuote->id;
+            $text = str_replace('[quote:destination_link]', $destinationLink, $text);
         }
 
         return $text;
