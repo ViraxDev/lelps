@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../src/PlaceholderReplacer.php';
+require_once __DIR__ . '/../src/Helper/PlaceholderReplacer.php';
 
 final class TemplateManager
 {
