@@ -1,0 +1,10 @@
+services:
+  les_echo_app:
+    container_name: les_echo_app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/var/task
+      - ./var:/var/task/var        # force create ./var
+      - ./vendor:/var/task/vendor  # force create ./vendor
