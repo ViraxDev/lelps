@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../src/PlaceholderConstants.php';
+
 final class PlaceholderReplacer
 {
     private $applicationContext;
@@ -22,12 +24,12 @@ final class PlaceholderReplacer
     public function replacePlaceholders(string $text, array $data): string
     {
         $quote = $this->getQuote($data);
-        if ($quote) {
+        if ($quote && PlaceholderConstants::hasQuotePlaceholders($text)) {
             $text = $this->replaceQuotePlaceholders($text, $quote);
         }
 
         $user = $this->getUser($data);
-        if ($user) {
+        if ($user && PlaceholderConstants::hasUserPlaceholders($text)) {
             $text = $this->replaceUserPlaceholders($text, $user);
         }
 
@@ -65,35 +67,35 @@ final class PlaceholderReplacer
         $site = $this->siteRepository->getById($quote->siteId);
         $destination = $this->destinationRepository->getById($quote->destinationId);
 
-        $needsDestinationLink = strpos($text, '[quote:destination_link]') !== false;
+        $needsDestinationLink = strpos($text, PlaceholderConstants::QUOTE_DESTINATION_LINK) !== false;
 
-        $containsSummaryHtml = strpos($text, '[quote:summary_html]') !== false;
-        $containsSummary = strpos($text, '[quote:summary]') !== false;
+        $containsSummaryHtml = strpos($text, PlaceholderConstants::QUOTE_SUMMARY_HTML) !== false;
+        $containsSummary = strpos($text, PlaceholderConstants::QUOTE_SUMMARY) !== false;
 
         if ($containsSummaryHtml || $containsSummary) {
             if ($containsSummaryHtml) {
                 $text = str_replace(
-                    '[quote:summary_html]',
+                    PlaceholderConstants::QUOTE_SUMMARY_HTML,
                     Quote::renderHtml($fullQuote),
                     $text
                 );
             }
             if ($containsSummary) {
                 $text = str_replace(
-                    '[quote:summary]',
+                    PlaceholderConstants::QUOTE_SUMMARY,
                     Quote::renderText($fullQuote),
                     $text
                 );
             }
         }
 
-        if (strpos($text, '[quote:destination_name]') !== false) {
-            $text = str_replace('[quote:destination_name]', $destination->countryName, $text);
+        if (strpos($text, PlaceholderConstants::QUOTE_DESTINATION_NAME) !== false) {
+            $text = str_replace(PlaceholderConstants::QUOTE_DESTINATION_NAME, $destination->countryName, $text);
         }
 
         if ($needsDestinationLink) {
             $destinationLink = $site->url . '/' . $destination->countryName . '/quote/' . $fullQuote->id;
-            $text = str_replace('[quote:destination_link]', $destinationLink, $text);
+            $text = str_replace(PlaceholderConstants::QUOTE_DESTINATION_LINK, $destinationLink, $text);
         }
 
         return $text;
@@ -101,8 +103,8 @@ final class PlaceholderReplacer
 
     private function replaceUserPlaceholders(string $text, User $user): string
     {
-        if (strpos($text, '[user:first_name]') !== false) {
-            $text = str_replace('[user:first_name]', ucfirst(mb_strtolower($user->firstname)), $text);
+        if (strpos($text, PlaceholderConstants::USER_FIRST_NAME) !== false) {
+            $text = str_replace(PlaceholderConstants::USER_FIRST_NAME, ucfirst(mb_strtolower($user->firstname)), $text);
         }
 
         return $text;
