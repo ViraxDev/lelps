@@ -2,14 +2,14 @@
 
 final class PlaceholderReplacer
 {
-    private $APPLICATION_CONTEXT;
+    private $applicationContext;
 
-    public function __construct()
+    public function __construct(ApplicationContext $applicationContext = null)
     {
-        $this->APPLICATION_CONTEXT = ApplicationContext::getInstance();
+        $this->applicationContext = $applicationContext ?: ApplicationContext::getInstance();
     }
 
-    public function replacePlaceholders(string $text, array $data)
+    public function replacePlaceholders(string $text, array $data): string
     {
         $quote = $this->getQuote($data);
         if ($quote) {
@@ -35,19 +35,21 @@ final class PlaceholderReplacer
 
     /**
      * @param array $data
-     * @return User
+     * @return User|null
      */
     private function getUser(array $data)
     {
-        return (isset($data['user']) && $data['user'] instanceof User) ? $data['user'] : $this->APPLICATION_CONTEXT->getCurrentUser();
+        return (isset($data['user']) && $data['user'] instanceof User)
+            ? $data['user']
+            : $this->applicationContext->getCurrentUser();
     }
 
     /**
-     * @param $text
+     * @param string $text
      * @param Quote $quote
-     * @return array|mixed|string|string[]
+     * @return string
      */
-    private function replaceQuotePlaceholders($text, Quote $quote)
+    private function replaceQuotePlaceholders(string $text, Quote $quote): string
     {
         $_quoteFromRepository = QuoteRepository::getInstance()->getById($quote->id);
         $usefulObject = SiteRepository::getInstance()->getById($quote->siteId);
@@ -90,7 +92,7 @@ final class PlaceholderReplacer
         return $text;
     }
 
-    private function replaceUserPlaceholders($text, User $user)
+    private function replaceUserPlaceholders(string $text, User $user): string
     {
         if (strpos($text, '[user:first_name]') !== false) {
             $text = str_replace('[user:first_name]', ucfirst(mb_strtolower($user->firstname)), $text);
